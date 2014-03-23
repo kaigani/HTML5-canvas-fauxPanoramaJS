@@ -21,6 +21,17 @@ var FauxPanorama = function(canvasID){
 	// for JSHint
 	var console = window.console;
 
+	//
+	// DEVICE MOVEMENT
+	//
+
+	device.callback = function(){
+
+		viewport.rotation = device.direction ? device.direction : viewport.rotation;
+		viewport.pitch = device.pitch;
+		//that.update();
+	};
+
 	// 
 	// EVENT HANDLERS
 	//
@@ -155,6 +166,8 @@ FauxPanorama.prototype.update = function(){
 
 	// Import for convenience
 	var viewport = this.viewport;
+	viewport.update(); // update bounds
+
 	//var device = this.device;
 	var preloader = this.preloader;
 
