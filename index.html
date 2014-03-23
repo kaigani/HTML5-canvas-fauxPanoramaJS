@@ -37,11 +37,11 @@
         // VIEWPORT
         var viewport = controller.viewport;
         
-        // temporary manual update
+        // temporary manual update-- FIX!!
         viewport.backgroundBounds.w = 640*8; 
         viewport.backgroundBounds.h = 1600;
         viewport.cameraBounds.w = document.body.clientWidth;
-        viewport.cameraBounds.h = document.body.clientHeight;
+        viewport.cameraBounds.h = 380;
         viewport.pitch = 0;
         viewport.update();
 
@@ -83,6 +83,10 @@
           canvas.width = document.body.clientWidth;
           canvas.height = 380;
 
+          // Should do this in FauxPanorama
+          viewport.cameraBounds.w = canvas.width;
+          viewport.cameraBounds.h = canvas.height;
+
           controller.update(); // or should this be refresh?
         };
 
@@ -95,12 +99,12 @@
           }
 
           // Don't draw every tick or it will flicker
-          if(typeof this.lastDeviceState === 'undefined' || this.lastDeviceState != device.isPaused || this.lastDeviceAspect != device.isLandscape() ){
+          if(typeof this.lastDeviceState === 'undefined' || this.lastDeviceState != device.isPaused || this.lastDeviceAspect != device.isLandscape ){
 
             if(device.isPaused){
               // touch mode
               ui.style.backgroundImage = "url(\""+preloader.getById('btn-touch').src+"\")";
-            }else if(device.isLandscape()){
+            }else if(device.isLandscape){
               // orientation mode - landscape
               ui.style.backgroundImage = "url(\""+preloader.getById('btn-landscape').src+"\")";
             }else{
@@ -110,12 +114,14 @@
           }
 
           this.lastDeviceState = device.isPaused;
-          this.lastDeviceAspect = device.isLandscape();
+          this.lastDeviceAspect = device.isLandscape;
 
         };
 
 
-        var toggleDevice = function(){
+        var toggleDevice = function(e){
+
+          e.preventDefault();
 
           if(device.isPaused){
             device.start();
