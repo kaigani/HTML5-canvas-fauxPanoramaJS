@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Faux Panorama Demo</title>
+
+		<!-- mobile viewport: -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<!-- 3RD PARTY -->
+		<script src="lib/dat.gui.min.js"></script>
+
+		<!-- CLASSES -->
+		<script src="assets/js/Preloader.js"></script>
+		<script src="assets/js/Viewport.js"></script>
+		<script src="assets/js/OrientationDevice.js"></script>
+
+		<script>
+			window.desktop = false;
+
+			// Imperfect way to detect if we're on the desktop
+			//window.addEventListener('mouseover',function(){ window.desktop=true; }, false);
+
+			// shim layer with setTimeout fallback - doesn't seem to outperform setInterval though...
+			window.requestAnimFrame = (function(){
+			  return  window.requestAnimationFrame       ||
+			          window.webkitRequestAnimationFrame ||
+			          window.mozRequestAnimationFrame    ||
+			          function( callback ){
+			            window.setTimeout(callback, 1000 / 60);
+			          };
+			})();
+
+			// Version
+			// - update the version for mobile device debugging
+			// - sometimes the cache won't clear
+			var version = 1.0; 
+
+			window.onload = function (){
+				
+				var canvas = document.getElementById('myCanvas');
+				var c = canvas.getContext('2d');
+
+				var viewport = new Viewport();
+				
+				// temporary manual update
+				viewport.backgroundBounds.w = 1280; 
+				viewport.backgroundBounds.h = 400;
+				viewport.update();
+
+				var preloader = new Preloader();
+				preloader.add('slice-01', 'assets/img/slice-01.png');
+				preloader.add('slice-02', 'assets/img/slice-02.png');
+				preloader.add('slice-03', 'assets/img/slice-03.png');
+				preloader.add('slice-04', 'assets/img/slice-04.png');
+				preloader.add('slice-05', 'assets/img/slice-05.png');
+				preloader.add('slice-06', 'assets/img/slice-06.png');
+				preloader.add('slice-07', 'assets/img/slice-07.png');
+				preloader.add('slice-08', 'assets/img/slice-08.png');
+
+				preloader.callback = function(){ 
+					console.log('Preloader finished loading.'); 
+					doResize();
+					start();
+				};
+
+				preloader.load();
+
+				window.preloader = preloader; // for debugging
+
+				var device = new OrientationDevice();
+
+				//
+				// DEBUG GUI
+				//
+				var gui = new dat.GUI();
+
+				gui.add(viewport,'rotation').listen();
+				gui.add(viewport,'pitch').listen();
+
+				var f1 = gui.addFolder('cameraBounds');
+				f1.add(viewport.cameraBounds,'w',1,1280).step(1).onChange(updateViewport);
+				f1.add(viewport.cameraBounds,'h',1,960).step(1).onChange(updateViewport);
+
+				var f2 = gui.addFolder('backgroundBounds');
+				f2.add(viewport.backgroundBounds,'w',1,1280).step(1).onChange(updateViewport);
+				f2.add(viewport.backgroundBounds,'h',1,960).step(1).onChange(updateViewport);
+				f2.add(viewport.backgroundBounds,'x').listen();
+				f2.add(viewport.backgroundBounds,'y').listen();
+
+				var f3 = gui.addFolder('Device');
+				f3.add(device,'direction').listen();
+				f3.add(device,'tiltLR').listen();
+				f3.add(device,'tiltFB').listen();
+				f3.open();
+
+				function updateViewport(){
+					viewport.update();
+					update();
+				}
+
+				//
+				// EVENT LISTENERS
+				//
+
+				// Handle window resizing
+				window.addEventListener('resize', doResize, false);
+
+				// Mouse events
+            	canvas.addEventListener('mousedown', handleMouseDown, false);
+            	canvas.addEventListener('mouseup', handleMouseUp, false);
+				
+
+				// SHARED VARIABLES
+				var offset_x = 0;
+				var offset_y = 0;
+				var scale = 1.0;
+
+				var count = 0;
+				var FPS = 0;
+
+				// 
+				// EVENT HANDLERS
+				//
+
+				var lastMouseX, lastMouseY;
+
+				function handleMouseDown(e){
+
+					lastMouseX = e.clientX;
+					lastMouseY = e.clientY;
+
+					canvas.addEventListener('mousemove', handleMouseMove, false);
+				}
+
+				function handleMouseMove(e){
+
+					var xDiff = e.clientX - lastMouseX;
+					var yDiff = e.clientY - lastMouseY;
+
+					lastMouseX = e.clientX;
+					lastMouseY = e.clientY;
+
+					var xRotation = 0;
+					var yRotation = 0;
+
+					if(xDiff > 0){
+						xRotation = 2;
+					}else if(xDiff < 0){
+						console.log("NEG X");
+						xRotation = -2;
+					}
+					
+					if(yDiff > 0){
+						yRotation = 10;
+					}else if(yDiff < 0){
+						console.log("NEG Y");
+						yRotation = -10;
+					}
+
+					viewport.rotateBy(xRotation,yRotation);
+
+					update();
+
+
+				}
+
+				function handleMouseUp(e){
+					canvas.removeEventListener('mousemove', handleMouseMove, false);
+				}
+				
+				
+				function doResize() {
+					canvas.width = document.body.clientWidth;
+					canvas.height = document.body.clientHeight;
+
+					//scale = Math.floor(4*canvas.width/bgImg.width); // scale background to 4x the canvas
+					//scale = (scale > 0)?scale:1;
+
+					update();
+
+				}
+
+				// 
+				// START LOOP
+				//
+
+				function start(){
+
+					this.timestamp = (this.timestamp)?this.timestamp:Date.now();
+					var newTimestamp = Date.now();
+					FPS = Math.floor( 1000 / (newTimestamp - this.timestamp) );
+					this.timestamp = newTimestamp;
+
+					// On some devices setInterval may perform better than requestAnimationFrame
+
+					 /*
+					if(!this.timer){
+						this.timer = setInterval(function() {
+							update();
+						}, 30);
+					}
+					// */
+
+					//changeOffsetByDevice();
+
+					update();
+					count++;
+
+					//requestAnimFrame(update);
+				}
+
+
+
+			    function changeOffsetByDevice() {
+			      
+			      //dir = (dir<270)?dir:dir-360;
+			      
+			      // Map bgImg.width px to 0-360 degrees 
+			      offset_x = (device.direction/360)*bgImg.width*scale;
+
+			      // Map bgImg.height px to 0-180 ... based on the canvas height
+			      offset_y = (1-Math.abs(device.tiltLR)/180)*(canvas.height - bgImg.height*scale); // background height
+			      //showIntro(); // update in the draw loop
+
+			    }
+			
+				function update() {
+							    
+					var debugText = "Version "+version.toFixed(1)+" [ w:"+canvas.width+", scale:"+scale+"] [ x:"+Math.floor(offset_x)+", y:"+Math.floor(offset_y)+"]";
+					//debugText += " [ dir:"+Math.floor(device_o.dir)+", FB:"+Math.floor(device_o.FB)+", LR:"+Math.floor(device_o.LR)+"]";
+
+					//debugText = "";
+					
+					// Clear the canvas
+					c.clearRect(0, 0, canvas.width, canvas.height);
+										
+					//
+					// DRAW BACKGROUND RECTS ------
+					//
+
+					// Left
+					var offset = viewport.backgroundBounds.x;
+					var slice_w = Math.floor(viewport.backgroundBounds.w/8)+1;
+
+					// Rect to illustrate left background
+					c.fillStyle = 'rgb(255,0,0)';
+					c.fillRect(viewport.backgroundBounds.x,viewport.backgroundBounds.y,viewport.backgroundBounds.w,viewport.backgroundBounds.h);
+
+					// Image slices on left
+					for(var i=0;i<8;i++){
+
+						if(offset+slice_w >= 0 && offset < viewport.cameraBounds.w){
+
+							var sliceId = 'slice-0'+(i+1);
+							var slice = preloader.getById(sliceId);
+							if(!slice) console.error("NO IMAGE FOUND: "+sliceId);
+
+							c.drawImage(slice,offset,viewport.backgroundBounds.y,slice_w,viewport.backgroundBounds.h);
+						}
+
+
+						offset += slice_w;
+					}
+
+					// Right
+					if(viewport.isWraparound){
+
+						offset = viewport.projectionBounds.w;
+
+						// Rect for right background
+						c.fillStyle = 'rgb(0,0,255)';
+						c.fillRect(offset,viewport.backgroundBounds.y,viewport.backgroundBounds.w,viewport.backgroundBounds.h);
+
+						// Image slices on right
+						for(i=0;i<8;i++){
+
+							if(offset+slice_w >=0 && offset < viewport.cameraBounds.w){
+								//c.fillRect(offset,0,slice_w,480);
+
+								var sliceId = 'slice-0'+(i+1);
+								var slice = preloader.getById(sliceId);
+								if(!slice) console.error("NO IMAGE FOUND: "+sliceId);
+
+								c.drawImage(slice,offset,viewport.backgroundBounds.y,slice_w,viewport.backgroundBounds.h);
+							}
+
+
+							offset += slice_w;
+						}
+					}
+
+					// Outline viewport camera
+					c.strokeStyle = 'rgb(0,0,0)';
+					c.strokeRect(viewport.cameraBounds.x,viewport.cameraBounds.y,viewport.cameraBounds.w,viewport.cameraBounds.h);
+
+					// -----
+
+					// Change color to black
+					c.fillStyle = 'rgb(0,0,0)';
+					c.font = 'bold 16px Arial, sans-serif';
+					
+					var textSize = c.measureText(debugText);
+					var cx = (canvas.width / 2) - (textSize.width/2);
+					var cy = (canvas.height / 2) - 8;
+					
+					c.fillText(debugText, cx, cy);
+
+					// FPS Widget
+					c.fillStyle = 'rgba(1,1,1,0.5)';
+					c.fillRect(0,0,88,32);
+
+					c.fillStyle = 'rgb(255,255,255)';
+					c.fillText("FPS: "+FPS, 10,20);
+
+					/*
+					setTimeout(function() {
+						offset = (offset > 400)?-400:offset+4;
+						showIntro();
+					}, 1);
+					*/
+				}
+			} 
+		</script>
+
+		<script>
+    		function BlockElasticScroll(event) {
+        		event.preventDefault();
+    		}
+    	</script>
+		
+		<style type="text/css" media="screen">
+			html {
+				 height: 100%;
+				 overflow: hidden;
+			}
+			
+			body {
+				margin:  0px;
+				padding: 0px;
+				height: 100%;
+			}
+		</style>
+		
+	</head>
+	<body ontouchmove="BlockElasticScroll(event);">
+		<canvas id="myCanvas" width="100" height="100">
+			Your browser doesn't include support for the canvas tag.
+		</canvas>
+	</body>
+</html>
+		

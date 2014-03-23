@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Faux Panorama Demo</title>
+
+		<!-- mobile viewport: -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		
+		<script>
+			window.desktop = false;
+			// Imperfect way to detect if we're on the desktop
+			window.addEventListener('mouseover',function(){ window.desktop=true; }, false);
+
+			// shim layer with setTimeout fallback - doesn't seem to outperform setInterval though...
+			window.requestAnimFrame = (function(){
+			  return  window.requestAnimationFrame       ||
+			          window.webkitRequestAnimationFrame ||
+			          window.mozRequestAnimationFrame    ||
+			          function( callback ){
+			            window.setTimeout(callback, 1000 / 60);
+			          };
+			})();
+
+
+			window.onload = function () {
+				
+				var canvas = document.getElementById('myCanvas');
+				var c = canvas.getContext('2d');
+				
+				window.addEventListener('click', handleClick, false);
+				window.addEventListener('touchend', handleClick, false);
+				window.addEventListener('resize', doResize, false);
+
+				initOrientation();
+				
+				var offset_x = 0;
+				var offset_y = 0;
+				var scale = 1.0;
+
+				var device_o = {};
+
+				var count = 0;
+				var FPS = 0;
+
+				var photoPanorama = new Image();
+				//photoPanorama.onload = function(){ console.log('The image has loaded!'); doResize(); drawLoop(); };
+				//bgImg.src = 'assets/img/CL_background.png';
+				photoPanorama.src = 'assets/img/bgPhoto.jpg';
+
+				var scenePanorama = new Image()
+				scenePanorama.src = 'assets/img/CL_background.png';
+				scenePanorama.onload = function(){ console.log('The image has loaded!'); doResize(); drawLoop(); };
+
+				var bgImg = scenePanorama;
+
+				
+				function handleClick() {
+
+					if(bgImg == scenePanorama){
+						bgImg = photoPanorama;
+					}else{
+						bgImg = scenePanorama;
+					}
+
+					doResize();
+			
+				}
+				
+				function doResize() {
+					canvas.width = document.body.clientWidth;
+					canvas.height = document.body.clientHeight;
+
+					//console.log(bgImg.width);
+					scale = Math.floor(4*canvas.width/bgImg.width); // scale background to 4x the canvas
+					scale = (scale > 0)?scale:1;
+
+					showIntro();
+
+				}
+
+				function drawLoop(){
+
+					this.timestamp = (this.timestamp)?this.timestamp:Date.now();
+					var newTimestamp = Date.now();
+					FPS = Math.floor( 1000 / (newTimestamp - this.timestamp) );
+					this.timestamp = newTimestamp;
+
+					// On some devices setInterval may perform better than requestAnimationFrame
+
+					 /*
+					if(!this.timer){
+						this.timer = setInterval(function() {
+							drawLoop();
+						}, 30);
+					}
+					// */
+
+					showIntro();
+					count++;
+
+					requestAnimFrame(drawLoop);
+				}
+
+				function initOrientation() {
+			      if (window.DeviceOrientationEvent) {
+			        
+			        window.addEventListener('deviceorientation', function(eventData) {
+			          // gamma is the left-to-right tilt in degrees, where right is positive
+			          var tiltLR = eventData.gamma;
+
+			          // correct on desktop
+			          tiltLR = (!window.desktop)?tiltLR:70;
+			          
+			          // beta is the front-to-back tilt in degrees, where front is positive
+			          var tiltFB = eventData.beta;
+			          
+			          // alpha is the compass direction the device is facing in degrees
+			          var dir = eventData.alpha;
+			          
+			          // call our orientation event handler
+			          deviceOrientationHandler(tiltLR, tiltFB, dir);
+
+			          device_o.LR = tiltLR;
+			          device_o.FB = tiltFB;
+			          device_o.dir = dir;
+
+			          }, false);
+			      } else {
+			        console.log( "Orientation not supported on your device or browser." );
+			      }
+			    }
+
+			    function deviceOrientationHandler(tiltLR, tiltFB, dir) {
+			      
+			      //dir = (dir<270)?dir:dir-360;
+			      
+			      // Map bgImg.widthpx to 0-360 degrees 
+			      offset_x = (dir/360)*bgImg.width*scale;
+
+			      // Map bgImg.heightpx to 0-180 ... based on the canvas height
+			      offset_y = (1-Math.abs(tiltLR)/180)*(canvas.height - bgImg.height*scale); // background height
+			      //showIntro(); // update in the draw loop
+
+			    }
+			
+				function showIntro () {
+							    
+					var debugText = "v04 [ w:"+canvas.width+", scale:"+scale+"] [ x:"+Math.floor(offset_x)+", y:"+Math.floor(offset_y)+"]";
+					debugText += " [ dir:"+Math.floor(device_o.dir)+", FB:"+Math.floor(device_o.FB)+", LR:"+Math.floor(device_o.LR)+"]";
+
+					debugText = "";
+					
+					// Clear the canvas
+					c.clearRect(0, 0, canvas.width, canvas.height);
+					
+					
+					// Store original width
+					var originalWidth = bgImg.width;
+					//console.log(originalWidth);
+					
+					// Compute new width & height
+					//bgImg.width = Math.round((50 * document.body.clientWidth) / 100);
+					//bgImg.height = Math.round((bgImg.width * bgImg.height) / originalWidth);
+					
+					// Create a small utility object
+					var logo = {
+						img: bgImg,
+						x: (canvas.width/2) - (bgImg.width),
+						y: (canvas.height/2) - (bgImg.height)
+					}
+					
+					// Present image
+					//c.drawImage(logo.img, logo.x+offset_x, logo.y+offset_y, logo.img.width*2, logo.img.height*2);
+					c.drawImage(logo.img, offset_x, offset_y, logo.img.width*scale, logo.img.height*scale);
+					c.drawImage(logo.img, offset_x-bgImg.width*scale, offset_y, logo.img.width*scale, logo.img.height*scale);
+					//c.drawImage(logo.img, offset_x+bgImg.width, offset_y, logo.img.width, logo.img.height*1.5);
+
+
+					// Change color to black
+					c.fillStyle = 'rgb(0,0,0)';
+					c.font = 'bold 16px Arial, sans-serif';
+					
+					var textSize = c.measureText(debugText);
+					var xCoord = (canvas.width / 2) - (textSize.width/2);
+					
+					c.fillText(debugText, xCoord, (logo.y + logo.img.height) + 50);
+
+					// FPS Widget
+					c.fillStyle = 'rgba(1,1,1,0.5)';
+					//c.fillStyle = 'rbga(0,0,0,0.5)';
+					c.fillRect(0,0,88,32);
+
+					c.fillStyle = 'rgb(255,255,255)';
+					c.fillText("FPS: "+FPS, 10,20);
+
+					/*
+					setTimeout(function() {
+						offset = (offset > 400)?-400:offset+4;
+						showIntro();
+					}, 1);
+					*/
+				}
+			} 
+		</script>
+
+		<script>
+    		function BlockElasticScroll(event) {
+        		event.preventDefault();
+    		}
+    	</script>
+		
+		<style type="text/css" media="screen">
+			html {
+				 height: 100%;
+				 overflow: hidden;
+			}
+			
+			body {
+				margin:  0px;
+				padding: 0px;
+				height: 100%;
+			}
+		</style>
+		
+	</head>
+	<body ontouchmove="BlockElasticScroll(event);">
+		<canvas id="myCanvas" width="100" height="100">
+			Your browser doesn't include support for the canvas tag.
+		</canvas>
+	</body>
+</html>
+		
