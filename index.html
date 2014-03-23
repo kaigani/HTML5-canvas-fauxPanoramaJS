@@ -95,7 +95,7 @@
           }
 
           // Don't draw every tick or it will flicker
-          if(typeof this.lastDeviceState && this.lastDeviceState != device.isPaused){
+          if(typeof this.lastDeviceState === 'undefined' || this.lastDeviceState != device.isPaused || this.lastDeviceAspect != device.isLandscape() ){
 
             if(device.isPaused){
               // touch mode
@@ -110,8 +110,10 @@
           }
 
           this.lastDeviceState = device.isPaused;
+          this.lastDeviceAspect = device.isLandscape();
 
         };
+
 
         var toggleDevice = function(){
 
