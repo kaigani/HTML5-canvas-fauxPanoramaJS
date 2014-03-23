@@ -9,6 +9,7 @@ var OrientationDevice = function(){
 	var that = this;
 
 	this.isPaused = false;
+	this.isLandscape = true;
 
 	this.tiltLR = 0;	// left-to-right in degrees, where right is positive, z-rotation or Roll
 	this.tiltFB = 0;	// front-to-back in degrees, where front is positive, x-rotation or Pitch
@@ -34,9 +35,9 @@ var OrientationDevice = function(){
 		that.direction = 360-e.alpha; // correction for direction of the x-axis
 
 		// Correct for landscape / portrait orientation
-		var isLandscape = (document.body.clientWidth > document.body.clientHeight);
-		that.pitch = (isLandscape) ? Math.abs(e.gamma) : Math.abs(e.beta);
-		that.roll  = (isLandscape) ? -1*e.beta : e.gamma;
+		that.isLandscape = (window.innerWidth > window.innerHeight);
+		that.pitch = (that.isLandscape) ? Math.abs(e.gamma) : Math.abs(e.beta);
+		that.roll  = (that.isLandscape) ? -1*e.beta : e.gamma;
 
 		that.pitch = 180-that.pitch; // another correction for the direction of the y-axis 
 
@@ -69,7 +70,4 @@ var OrientationDevice = function(){
 
 };
 
-OrientationDevice.prototype.isLandscape = function(){
 
-	return (document.body.clientWidth > document.body.clientHeight);
-};
