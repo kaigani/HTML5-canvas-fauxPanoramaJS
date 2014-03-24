@@ -13,17 +13,17 @@
 		<script src="../lib/dat.gui.min.js"></script>
 
 		<!-- BUILD SCRIPT -->
-		<!--
+		
 		<script src="../build/FauxPanorama.min.js"></script>
-		-->
+		
 
 		<!-- SRC SCRIPTS -->
-		
+		<!--
 		<script src="../src/FauxPanorama.js"></script>
 		<script src="../src/Preloader.js"></script>
 		<script src="../src/Viewport.js"></script>
 		<script src="../src/OrientationDevice.js"></script>
-		
+		-->
 
 		<!-- REMOTE SCRIPT -->
 		<!-- <script src="https://rawgithub.com/kaigani/HTML5-canvas-fauxPanoramaJS/master/build/FauxPanorama.min.js"></script>  -->
@@ -38,8 +38,8 @@
 				var ui = document.getElementById('ui');
 
 				// Set the canvas size
-				canvas.width = document.body.clientWidth;
-				canvas.height = document.body.clientHeight;
+				//canvas.width = 960;
+				//canvas.height = 520;
 
 				// FAUX PANORAMA as controller
 				var controller = new FauxPanorama('myCanvas');
@@ -75,7 +75,7 @@
 
 				preloader.callback = function(){ 
 					console.log('Preloader finished loading.'); 
-					doResize();
+					//doResize();
 					drawUI();
 					controller.start();
 				};
@@ -142,7 +142,7 @@
 				//
 
 				// Handle window resizing
-				window.addEventListener('resize', doResize, false);
+				//window.addEventListener('resize', doResize, false);
 
 				// Draw the minimal UI
 				window.addEventListener('FP:tick', drawUI, false);
@@ -159,6 +159,15 @@
 				var gui = new dat.GUI();
 				var f;
 
+				// DEBUG helper
+				var updateViewport = function(){
+
+					var wrapper = document.getElementById('wrapper');
+					wrapper.style.width = ""+canvas.width+"px";
+
+					viewport.update();
+				}
+
 				gui.add(viewport,'rotation').listen();
 				gui.add(viewport,'pitch').listen();
 				gui.add(viewport,'isWraparound').listen();
@@ -172,8 +181,8 @@
 				f.add(document.body,'clientHeight').listen();
 
 				f = gui.addFolder('canvas');
-				f.add(canvas,'width',1,2400).step(1).listen().onChange(updateViewport);
-				f.add(canvas,'height',1,2400).step(1).listen().onChange(updateViewport);
+				f.add(canvas,'width',1,2400).step(1).listen().onFinishChange(updateViewport);
+				f.add(canvas,'height',1,2400).step(1).listen().onFinishChange(updateViewport);
 
 				f = gui.addFolder('cameraBounds');
 				f.add(viewport.cameraBounds,'w',1,2400).step(1).listen().onChange(updateViewport);
@@ -214,10 +223,6 @@
 					} 
 				});
 
-				// DEBUG helper
-				var updateViewport = function(){
-					viewport.update();
-				}
 
 				// 
 				// CANVAS MARKERS
@@ -290,10 +295,18 @@
 			}
 			
 			body {
+				background-color: rgb(128,128,128);
 				margin:  0px;
-				padding: 0px;
+				padding: 20px;
 				height: 100%;
 			}
+
+			#wrapper {
+
+				width: 640px;
+				margin: 0 auto;
+			}
+
 			#ui {
 				position: absolute;
     			z-index: 300;
@@ -306,9 +319,11 @@
 		
 	</head>
 	<body ontouchmove="BlockElasticScroll(event);">
-		<canvas id="myCanvas" width="100" height="100">
-			Your browser doesn't include support for the canvas tag.
-		</canvas>
+		<div id="wrapper">
+			<canvas id="myCanvas" width="640" height="480">
+				Your browser doesn't include support for the canvas tag.
+			</canvas>
+		</div>
 		<div id="ui"><div>
 	</body>
 </html>
