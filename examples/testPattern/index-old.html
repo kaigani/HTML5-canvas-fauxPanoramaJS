@@ -11,17 +11,14 @@
 
 		<!-- SRC SCRIPTS -->
 		<!--
-		<script src="src/FauxPanorama.js"></script>
-		<script src="src/Preloader.js"></script>
-		<script src="src/Viewport.js"></script>
-		<script src="src/OrientationDevice.js"></script>
+		<script src="../../src/FauxPanorama.js"></script>
+		<script src="../../src/Preloader.js"></script>
+		<script src="../../src/Viewport.js"></script>
+		<script src="../../src/OrientationDevice.js"></script>
 		-->
 
-		<!-- BUILD SCRIPT -->
-		<script src="../../build/FauxPanorama.min.js"></script>
-
-		<!-- REMOTE SCRIPT -->
-		<!-- <script src="https://rawgithub.com/kaigani/HTML5-canvas-fauxPanoramaJS/master/build/FauxPanorama.min.js"></script>  -->
+		<!-- BUILD SCRIPTS -->
+		<script src="../../build/FauxPanorama.min.js"></script> 
 
 		<script>
 
@@ -47,7 +44,6 @@
 				viewport.backgroundBounds.h = 1600;
 				viewport.cameraBounds.w = document.body.clientWidth;
 				viewport.cameraBounds.h = document.body.clientHeight;
-				viewport.pitch = 0;
 				viewport.update();
 
 				// PRELOADER
@@ -100,12 +96,12 @@
 					}
 
 					// Don't draw every tick or it will flicker
-					if(typeof this.lastDeviceState === 'undefined' || this.lastDeviceState != device.isPaused || this.lastDeviceAspect != device.isLandscape ){
+					if(typeof this.lastDeviceState && this.lastDeviceState != device.isPaused){
 
 						if(device.isPaused){
 							// touch mode
 							ui.style.backgroundImage = "url(\""+preloader.getById('btn-touch').src+"\")";
-						}else if(device.isLandscape){
+						}else if(device.isLandscape()){
 							// orientation mode - landscape
 							ui.style.backgroundImage = "url(\""+preloader.getById('btn-landscape').src+"\")";
 						}else{
@@ -115,7 +111,6 @@
 					}
 
 					this.lastDeviceState = device.isPaused;
-					this.lastDeviceAspect = device.isLandscape;
 
 				};
 

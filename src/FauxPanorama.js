@@ -12,6 +12,12 @@ var FauxPanorama = function(canvasID){
 	var preloader = this.preloader = new Preloader();
 	var canvas = this.canvas = document.getElementById(canvasID);
 
+	// INITIALISE VIEWPORT
+	viewport.backgroundBounds.w = 640*8; // assumes 8 slices of 640x1600
+	viewport.backgroundBounds.h = 1600;
+	viewport.cameraBounds.w = canvas.width;
+	viewport.cameraBounds.h = canvas.height;
+
 	// Touch scrolling modifiers
 	this.invertX = false; // true = background tracks touch movement
 	this.invertY = false;
@@ -29,7 +35,8 @@ var FauxPanorama = function(canvasID){
 
 		viewport.rotation = device.direction ? device.direction : viewport.rotation;
 		viewport.pitch = device.pitch;
-		//that.update();
+		//that.update(); // update in draw loop
+		
 	};
 
 	// 
@@ -87,7 +94,7 @@ var FauxPanorama = function(canvasID){
 
 		viewport.rotateBy(xRotation,yRotation);
 
-		that.update();
+		//that.update(); // --- no update, let draw loop handle it
 
 
 	};
@@ -166,6 +173,8 @@ FauxPanorama.prototype.update = function(){
 
 	// Import for convenience
 	var viewport = this.viewport;
+	viewport.cameraBounds.w = canvas.width; // doesn't seem to belong here...
+	viewport.cameraBounds.h = canvas.height;
 	viewport.update(); // update bounds
 
 	//var device = this.device;

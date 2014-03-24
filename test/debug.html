@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Faux Panorama Demo</title>
+
+		<!-- mobile viewport: -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<!-- DAT GUI -->
+		<script src="../lib/dat.gui.min.js"></script>
+
+		<!-- BUILD SCRIPT -->
+		<!--
+		<script src="../build/FauxPanorama.min.js"></script>
+		-->
+
+		<!-- SRC SCRIPTS -->
+		
+		<script src="../src/FauxPanorama.js"></script>
+		<script src="../src/Preloader.js"></script>
+		<script src="../src/Viewport.js"></script>
+		<script src="../src/OrientationDevice.js"></script>
+		
+
+		<!-- REMOTE SCRIPT -->
+		<!-- <script src="https://rawgithub.com/kaigani/HTML5-canvas-fauxPanoramaJS/master/build/FauxPanorama.min.js"></script>  -->
+
+		<script>
+
+			window.onload = function(){
+
+// SETUP ----
+
+				var canvas = document.getElementById('myCanvas');
+				var ui = document.getElementById('ui');
+
+				// Set the canvas size
+				canvas.width = document.body.clientWidth;
+				canvas.height = document.body.clientHeight;
+
+				// FAUX PANORAMA as controller
+				var controller = new FauxPanorama('myCanvas');
+
+				// Config - these are the same as the defaults
+				controller.invertX = false;
+				controller.invertY = false;
+				controller.speedX = 2.0;
+				controller.speedY = 4.0;
+
+				// VIEWPORT
+				var viewport = controller.viewport;
+				
+				// temporary manual update
+				viewport.pitch = 0;
+				viewport.update();
+
+				// PRELOADER
+				var preloader = controller.preloader;
+
+				preloader.add('slice-01', 'assets/img/slice-01.png');
+				preloader.add('slice-02', 'assets/img/slice-02.png');
+				preloader.add('slice-03', 'assets/img/slice-03.png');
+				preloader.add('slice-04', 'assets/img/slice-04.png');
+				preloader.add('slice-05', 'assets/img/slice-05.png');
+				preloader.add('slice-06', 'assets/img/slice-06.png');
+				preloader.add('slice-07', 'assets/img/slice-07.png');
+				preloader.add('slice-08', 'assets/img/slice-08.png');
+
+				preloader.add('btn-landscape', 'assets/img/btn-landscape.png');
+				preloader.add('btn-portrait', 'assets/img/btn-portrait.png');
+				preloader.add('btn-touch', 'assets/img/btn-touch.png');
+
+				preloader.callback = function(){ 
+					console.log('Preloader finished loading.'); 
+					doResize();
+					drawUI();
+					controller.start();
+				};
+
+				preloader.load();
+
+				// DEVICE
+				var device = controller.device;
+
+// EVENTS ----	
+
+				//
+				// EVENT HANDLERS
+				//
+
+				// doResize - for a full window canvas
+				var doResize = function(){
+
+					canvas.width = document.body.clientWidth;
+					canvas.height = document.body.clientHeight;
+
+					controller.update(); // or should this be refresh?
+				};
+
+				// drawUI - a button to toggle the orientation mode
+				var drawUI = function(){
+
+					// Animate if paused
+					if(device.isPaused){
+						viewport.rotateBy(0.1,0);
+					}
+
+					// Don't draw every tick or it will flicker
+					if(typeof this.lastDeviceState === 'undefined' || this.lastDeviceState != device.isPaused || this.lastDeviceAspect != device.isLandscape ){
+
+						if(device.isPaused){
+							// touch mode
+							ui.style.backgroundImage = "url(\""+preloader.getById('btn-touch').src+"\")";
+						}else if(device.isLandscape){
+							// orientation mode - landscape
+							ui.style.backgroundImage = "url(\""+preloader.getById('btn-landscape').src+"\")";
+						}else{
+							// orientation mode - landscape
+							ui.style.backgroundImage = "url(\""+preloader.getById('btn-portrait').src+"\")";	
+						}
+					}
+
+					this.lastDeviceState = device.isPaused;
+					this.lastDeviceAspect = device.isLandscape;
+
+				};
+
+				var toggleDevice = function(){
+
+					if(device.isPaused){
+						device.start();
+					}else{
+						device.pause();
+					}
+				};
+
+				//
+				// EVENT LISTENERS
+				//
+
+				// Handle window resizing
+				window.addEventListener('resize', doResize, false);
+
+				// Draw the minimal UI
+				window.addEventListener('FP:tick', drawUI, false);
+				
+				ui.addEventListener('click',toggleDevice,false);
+				ui.addEventListener('touchend',toggleDevice,false);
+
+// DEBUG ----
+
+				//
+				// DEBUG GUI
+				//
+
+				var gui = new dat.GUI();
+				var f;
+
+				gui.add(viewport,'rotation').listen();
+				gui.add(viewport,'pitch').listen();
+				gui.add(viewport,'isWraparound').listen();
+
+				f = gui.addFolder('window');
+				f.add(window,'innerWidth').listen();
+				f.add(window,'innerHeight').listen();
+
+				f = gui.addFolder('document');
+				f.add(document.body,'clientWidth').listen();
+				f.add(document.body,'clientHeight').listen();
+
+				f = gui.addFolder('canvas');
+				f.add(canvas,'width',1,2400).step(1).listen().onChange(updateViewport);
+				f.add(canvas,'height',1,2400).step(1).listen().onChange(updateViewport);
+
+				f = gui.addFolder('cameraBounds');
+				f.add(viewport.cameraBounds,'w',1,2400).step(1).listen().onChange(updateViewport);
+				f.add(viewport.cameraBounds,'h',1,2400).step(1).listen().onChange(updateViewport);
+
+				f = gui.addFolder('backgroundBounds');
+				f.add(viewport.backgroundBounds,'w',1,6400).step(1).listen().onChange(updateViewport);
+				f.add(viewport.backgroundBounds,'h',1,2400).step(1).listen().onChange(updateViewport);
+				f.add(viewport.backgroundBounds,'x').listen();
+				f.add(viewport.backgroundBounds,'y').listen();
+
+				f = gui.addFolder('leftBounds');
+				f.add(viewport.leftBounds,'w',1,6400).step(1).listen();
+				f.add(viewport.leftBounds,'h',1,2400).step(1).listen();
+				f.add(viewport.leftBounds,'x').listen();
+				f.add(viewport.leftBounds,'y').listen();
+				f.open();
+
+				f = gui.addFolder('rightBounds');
+				f.add(viewport.rightBounds,'w',1,6400).step(1).listen();
+				f.add(viewport.rightBounds,'h',1,2400).step(1).listen();
+				f.add(viewport.rightBounds,'x').listen();
+				f.add(viewport.rightBounds,'y').listen();
+				f.open();
+
+
+				f = gui.addFolder('Device');
+				f.add(device,'direction').listen();
+				f.add(device,'tiltLR').listen();
+				f.add(device,'tiltFB').listen();
+				f.add(device,'pitch').listen();
+				f.add(device,'roll').listen();
+				f.add(device,'isPaused').listen().onChange( function(){ 
+					if(device.isPaused){ 
+						device.pause(); 
+					}else{
+						device.start();
+					} 
+				});
+
+				// DEBUG helper
+				var updateViewport = function(){
+					viewport.update();
+				}
+
+				// 
+				// CANVAS MARKERS
+				//
+
+				var drawDebug = function(){
+
+					//console.log("Drawing debug...");
+
+					var c = canvas.getContext('2d');
+
+					// Outline viewport camera
+					c.strokeStyle = 'rgb(0,0,0)';
+					c.strokeRect(viewport.cameraBounds.x,viewport.cameraBounds.y,viewport.cameraBounds.w,viewport.cameraBounds.h);
+
+					// TRANSLATE BACKGROUND
+					var scale = canvas.width / viewport.backgroundBounds.w / 2;
+					c.save();
+					c.translate(canvas.width/2-(scale*viewport.backgroundBounds.w/2),canvas.height/2-(scale*viewport.backgroundBounds.h/2));
+					
+					c.scale(scale,scale);
+					c.lineWidth = 1/scale;
+
+					// DRAW BACKGROUND
+					c.fillStyle = 'rgba(255,255,255,0.5)';
+					c.fillRect(0,0,viewport.backgroundBounds.w,viewport.backgroundBounds.h);
+					c.strokeStyle = 'rgb(255,255,255)';
+					var slice_w = viewport.backgroundBounds.w/8; 
+					for(var i=0;i<8;i++){
+						c.strokeRect(slice_w*i,0,slice_w,viewport.backgroundBounds.h);
+					}
+
+					// Outline left bounds
+					c.strokeStyle = 'rgb(255,0,0)';
+					c.strokeRect(viewport.leftBounds.x,viewport.leftBounds.y,viewport.leftBounds.w,viewport.leftBounds.h);
+
+					// Outline right bounds
+					c.strokeStyle = 'rgb(0,0,255)';
+					if(viewport.isWraparound){
+						c.strokeRect(viewport.rightBounds.x,viewport.rightBounds.y,viewport.rightBounds.w,viewport.rightBounds.h);
+					}
+					c.restore();
+
+					// Debug text
+					var debugText = "Debugging";
+					c.fillStyle = 'rgb(0,0,0)';
+					c.font = 'bold 16px Arial, sans-serif';
+					
+					var textSize = c.measureText(debugText);
+					var cx = (canvas.width / 2) - (textSize.width/2);
+					var cy = (canvas.height / 2) + 8;
+					
+					c.fillText(debugText, cx, cy);
+				};
+
+				window.addEventListener('FP:tick', drawDebug, false);
+			};
+		</script>
+
+		<script>
+    		function BlockElasticScroll(event) {
+        		event.preventDefault();
+    		}
+    	</script>
+		
+		<style type="text/css" media="screen">
+			html {
+				 height: 100%;
+				 overflow: hidden;
+			}
+			
+			body {
+				margin:  0px;
+				padding: 0px;
+				height: 100%;
+			}
+			#ui {
+				position: absolute;
+    			z-index: 300;
+    			left:20px;
+    			top:20px;
+    			width:120px;
+    			height:120px;
+			}
+		</style>
+		
+	</head>
+	<body ontouchmove="BlockElasticScroll(event);">
+		<canvas id="myCanvas" width="100" height="100">
+			Your browser doesn't include support for the canvas tag.
+		</canvas>
+		<div id="ui"><div>
+	</body>
+</html>
+		

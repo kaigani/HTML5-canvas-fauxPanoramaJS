@@ -67,8 +67,6 @@ Viewport.prototype.rotateBy = function(rotation,pitch){
 	}else if(this.pitch < 0){
 		this.pitch = 0;
 	}
-	
-
 
 	updateBounds(this);
 };
@@ -149,6 +147,9 @@ var updateBounds = function(viewport){
 	// UPDATE DRAWING OFFSETS
 	viewport.backgroundBounds.x = 0-viewport.leftBounds.x;
 	viewport.backgroundBounds.y = 0-upperEdge;
+
+	viewport.leftBounds.h = viewport.rightBounds.h = viewport.cameraBounds.h;
+	viewport.leftBounds.y = viewport.rightBounds.y = upperEdge;
 
 	//console.log(viewport.leftBounds);
 	//console.log(viewport.backgroundBounds);
