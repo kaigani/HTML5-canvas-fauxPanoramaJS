@@ -30,14 +30,27 @@ var OrientationDevice = function(){
 			return;
 		}
 
-		that.tiltLR = e.gamma;
-		that.tiltFB = e.beta;
+		that.tiltLR = e.gamma;	// [-180,180] -- not per spec!
+		that.tiltFB = e.beta;	// [-90,90] -- not per spec!
 		that.direction = 360-e.alpha; // correction for direction of the x-axis
 
-		// Correct for landscape / portrait orientation
 		that.isLandscape = (window.innerWidth > window.innerHeight);
-		that.pitch = (that.isLandscape) ? Math.abs(e.gamma) : Math.abs(e.beta);
-		that.roll  = (that.isLandscape) ? -1*e.beta : e.gamma;
+
+		// Correct for landscape / portrait orientation
+		if(that.isLandscape){
+			that.pitch = Math.abs(e.gamma);
+		}else{
+			// Strange iOS things happening here in portrait - gamma value jumps!
+			if(Math.abs(e.gamma < 90)){
+				that.pitch = Math.abs(e.beta);
+			}else{
+				that.pitch = 180-Math.abs(e.beta);
+			}
+		}
+
+		// These don't work
+		//that.pitch = (that.isLandscape) ? Math.abs(e.gamma) : Math.abs(e.beta);
+		//that.roll  = (that.isLandscape) ? -1*e.beta : e.gamma;
 
 		that.pitch = 180-that.pitch; // another correction for the direction of the y-axis 
 
