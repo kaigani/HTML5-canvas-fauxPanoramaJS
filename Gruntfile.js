@@ -27,7 +27,7 @@ module.exports = function(grunt) {
       },
       js: {
         files: {
-          'build/FauxPanorama.min.js': ['build/FauxPanorama.min.js']
+          'build/FauxPanorama.min.js': ['build/FauxPanorama.js']
         }
       }
     },
